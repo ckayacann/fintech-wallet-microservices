@@ -30,18 +30,15 @@ public class TransfersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> SubmitTransfer([FromBody] CreateTransferDto dto)
     {
-        // Kilit anahtarı (Gönderen hesaba özel kilit koyuyoruz)
         string resource = $"lock:account:{dto.FromAccount}";
         TimeSpan expiryTime = TimeSpan.FromSeconds(10);
         TimeSpan waitTime = TimeSpan.FromSeconds(2);
         TimeSpan retryTime = TimeSpan.FromMilliseconds(200);
 
-        // Redis üzerinde kilit edinmeye çalışıyoruz
         await using (var redLock = await _lockFactory.CreateLockAsync(resource, expiryTime, waitTime, retryTime))
         {
             if (!redLock.IsAcquired)
             {
-                // Aynı hesap üzerinde devam eden aktif bir işlem var
                 return StatusCode(StatusCodes.Status429TooManyRequests, new 
                 { 
                     message = "Hesabınızda şu anda işlenen bir transfer bulunuyor. Lütfen birkaç saniye sonra tekrar deneyin." 
@@ -72,7 +69,7 @@ public class TransfersController : ControllerBase
             ));
 
             return Accepted(new { transactionId, status = "Processing" });
-        } // Block bittiğinde kilit Redis üzerinden otomatik kaldırılır (Release lock)
+        } 
     }
 
     public record CreateTransferDto(string FromAccount, string ToAccount, decimal Amount);

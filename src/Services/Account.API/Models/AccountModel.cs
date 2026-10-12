@@ -7,10 +7,10 @@ public class AccountModel
     public int Id { get; set; }
 
     [Required]
-    public int UserId { get; set; } // Auth.API'deki User.Id ile eşleşir
+    public int UserId { get; set; } 
 
     [Required]
-    public string AccountNumber { get; set; } = string.Empty; // TR123456789
+    public string AccountNumber { get; set; } = string.Empty; 
 
     public decimal Balance { get; set; } = 0;
 

@@ -23,7 +23,7 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
         {
             UserId = request.UserId,
             AccountNumber = accountNumber,
-            Balance = 1000, // Deneme için başlangıç bakiyesi
+            Balance = 1000, 
             Currency = request.Currency
         };
 

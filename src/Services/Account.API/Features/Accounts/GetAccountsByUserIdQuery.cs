@@ -31,12 +31,10 @@ public class GetAccountsByUserIdQueryHandler : IRequestHandler<GetAccountsByUser
             return JsonSerializer.Deserialize<List<AccountModel>>(cachedAccounts)!;
         }
 
-        // 2. Cache'de yoksa Veritabanından okunur
         var accounts = await _context.Accounts
             .Where(a => a.UserId == request.UserId)
             .ToListAsync(cancellationToken);
 
-        // 3. Veritabanından alınan veri 5 dakika süreyle Redis'e yazılır
         var cacheOptions = new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)

@@ -154,9 +154,9 @@ Run each service in a **separate terminal tab**:
 curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "ahmet@banka.com",
+    "email": "johndoe@banka.com",
     "password": "Password123!",
-    "fullName": "Ahmet Yılmaz"
+    "fullName": "John Doe"
   }'
 ```
 
@@ -165,7 +165,7 @@ curl -X POST http://localhost:5000/api/auth/register \
 curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "ahmet@banka.com",
+    "email": "johndoe@banka.com",
     "password": "Password123!"
   }'
 ```

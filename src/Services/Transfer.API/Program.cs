@@ -5,8 +5,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Transfer.API.Consumers;
 using Transfer.API.Data;
+using RedLockNet.SERedis;
+using RedLockNet.SERedis.Configuration;
+using StackExchange.Redis;
+using RedLockNet;
 
 var builder = WebApplication.CreateBuilder(args);
+var multiplexers = new List<RedLockMultiplexer>
+{
+    ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379")
+};
+
+builder.Services.AddSingleton<IDistributedLockFactory>(RedLockFactory.Create(multiplexers));
 
 builder.Services.AddDbContext<TransferDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=transfer.db"));

@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RedLockNet;
 using Transfer.API.Data;
 using Transfer.API.Events;
 using Transfer.API.Models;
@@ -14,41 +15,65 @@ public class TransfersController : ControllerBase
 {
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly TransferDbContext _context;
+    private readonly IDistributedLockFactory _lockFactory;
 
-    public TransfersController(IPublishEndpoint publishEndpoint, TransferDbContext context)
+    public TransfersController(
+        IPublishEndpoint publishEndpoint, 
+        TransferDbContext context, 
+        IDistributedLockFactory lockFactory)
     {
         _publishEndpoint = publishEndpoint;
         _context = context;
+        _lockFactory = lockFactory;
     }
 
     [HttpPost]
     public async Task<IActionResult> SubmitTransfer([FromBody] CreateTransferDto dto)
     {
-        var transactionId = Guid.NewGuid();
+        // Kilit anahtarı (Gönderen hesaba özel kilit koyuyoruz)
+        string resource = $"lock:account:{dto.FromAccount}";
+        TimeSpan expiryTime = TimeSpan.FromSeconds(10);
+        TimeSpan waitTime = TimeSpan.FromSeconds(2);
+        TimeSpan retryTime = TimeSpan.FromMilliseconds(200);
 
-        var transferLog = new TransferLog
+        // Redis üzerinde kilit edinmeye çalışıyoruz
+        await using (var redLock = await _lockFactory.CreateLockAsync(resource, expiryTime, waitTime, retryTime))
         {
-            Id = transactionId,
-            FromAccount = dto.FromAccount,
-            ToAccount = dto.ToAccount,
-            Amount = dto.Amount,
-            Status = "Pending"
-        };
+            if (!redLock.IsAcquired)
+            {
+                // Aynı hesap üzerinde devam eden aktif bir işlem var
+                return StatusCode(StatusCodes.Status429TooManyRequests, new 
+                { 
+                    message = "Hesabınızda şu anda işlenen bir transfer bulunuyor. Lütfen birkaç saniye sonra tekrar deneyin." 
+                });
+            }
 
-        _context.TransferLogs.Add(transferLog);
-        await _context.SaveChangesAsync();
+            var transactionId = Guid.NewGuid();
 
-        // RabbitMQ kuyruğuna asenkron event fırlatıyoruz (Non-blocking)
-        await _publishEndpoint.Publish(new MoneyTransferSubmittedEvent(
-            transactionId,
-            dto.FromAccount,
-            dto.ToAccount,
-            dto.Amount,
-            DateTime.UtcNow
-        ));
+            var transferLog = new TransferLog
+            {
+                Id = transactionId,
+                FromAccount = dto.FromAccount,
+                ToAccount = dto.ToAccount,
+                Amount = dto.Amount,
+                Status = "Pending"
+            };
 
-        return Accepted(new { transactionId, status = "Processing" });
+            _context.TransferLogs.Add(transferLog);
+            await _context.SaveChangesAsync();
+
+            // RabbitMQ event fırlatma
+            await _publishEndpoint.Publish(new MoneyTransferSubmittedEvent(
+                transactionId,
+                dto.FromAccount,
+                dto.ToAccount,
+                dto.Amount,
+                DateTime.UtcNow
+            ));
+
+            return Accepted(new { transactionId, status = "Processing" });
+        } // Block bittiğinde kilit Redis üzerinden otomatik kaldırılır (Release lock)
     }
-}
 
-public record CreateTransferDto(string FromAccount, string ToAccount, decimal Amount);
+    public record CreateTransferDto(string FromAccount, string ToAccount, decimal Amount);
+}

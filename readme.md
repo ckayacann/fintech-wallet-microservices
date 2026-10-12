@@ -1,4 +1,4 @@
-# FinTech Wallet - Event-Driven Microservices (.NET 10)
+# FinTech Wallet - Event Driven Microservices (.NET 10)
 
 This repository contains an enterprise-grade microservices ecosystem designed according to modern banking and FinTech requirements. It features **security (JWT & User Secrets)**, **distributed caching (Redis)**, an **event-driven asynchronous architecture (RabbitMQ & MassTransit)**, and a **distributed locking mechanism (RedLock)** to prevent double-spending.
 

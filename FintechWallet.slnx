@@ -1,2 +1,8 @@
 <Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Services/">
+    <Project Path="src/Services/Account.API/Account.API.csproj" />
+    <Project Path="src/Services/Auth.API/Auth.API.csproj" />
+    <Project Path="src/Services/Transfer.API/Transfer.API.csproj" />
+  </Folder>
 </Solution>

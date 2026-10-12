@@ -25,7 +25,7 @@ All microservices are exposed to external clients through a single entry point v
                                                                [ RabbitMQ Queue ]
                                                                          │
                                                                          ▼
-                                                      [ MoneyTransferConsumer ]
+                                                            [ MoneyTransferConsumer ]
 ```
 
 ---
